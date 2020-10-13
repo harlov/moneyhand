@@ -1,0 +1,4 @@
+- [ ] CRUD list of spending categories with typization
+- [ ] Salary CRUD.
+- [ ] Balance report
+- [ ] Every-month planing

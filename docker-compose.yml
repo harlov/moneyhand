@@ -1,0 +1,11 @@
+version: "3.8"
+services:
+  moneyhand_tests:
+    build: .
+    depends_on:
+      - postgresql
+
+  postgresql:
+    image: postgres:13.0
+    environment:
+      POSTGRES_PASSWORD: "password"

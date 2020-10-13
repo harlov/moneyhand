@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "moneyhand"
+version = "0.1.0"
+description = "Moneyhand - To keep your finances in order."
+authors = ["Nikita Kharlov <nikita@harlov.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+sqlalchemy = {git = "https://github.com/sqlalchemy/sqlalchemy"}
+asyncpg = "^0.21.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.1.1"
+pytest-asyncio = "^0.14.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
