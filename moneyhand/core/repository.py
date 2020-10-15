@@ -12,7 +12,3 @@ class AbstractCategoryRepository(abc.ABC):
     @abc.abstractmethod
     async def list(self) -> List[entities.Category]:
         ...
-
-    @abc.abstractmethod
-    async def _persist(self):
-        ...

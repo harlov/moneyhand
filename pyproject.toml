@@ -7,8 +7,12 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-sqlalchemy = {git = "https://github.com/sqlalchemy/sqlalchemy"}
 asyncpg = "^0.21.0"
+sqlalchemy = {git = "https://github.com/sqlalchemy/sqlalchemy"}
+click = "^7.1.2"
+alembic = "^1.4.3"
+psycopg2 = "^2.8.6"
+nest-asyncio = "^1.4.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.1"

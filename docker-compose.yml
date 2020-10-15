@@ -1,7 +1,9 @@
 version: "3.8"
 services:
   moneyhand_tests:
-    build: .
+    build:
+      context: .
+      target: dev
     depends_on:
       - postgresql
 
@@ -9,3 +11,11 @@ services:
     image: postgres:13.0
     environment:
       POSTGRES_PASSWORD: "password"
+
+
+  cli:
+    build:
+      context: .
+      target: cli
+    depends_on:
+      - postgresql

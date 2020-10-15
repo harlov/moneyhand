@@ -15,7 +15,6 @@ from moneyhand.adapters import orm
 
 class CategoryRepository(AbstractCategoryRepository):
     def __init__(self, uow_context_cv: ContextVar):
-        self._seen = []
         self._context_cv = uow_context_cv
 
     @property
@@ -23,7 +22,9 @@ class CategoryRepository(AbstractCategoryRepository):
         return self._context_cv.get().session
 
     async def add(self, category: entities.Category) -> None:
-        self._seen.append(category)
+        self._transaction.add(
+            self._entity_to_row(category)
+        )
 
     async def list(self) -> List[entities.Category]:
         res = await self._transaction.execute(select(orm.Category))
@@ -40,11 +41,6 @@ class CategoryRepository(AbstractCategoryRepository):
             id=str(category.id),
             name=category.name,
         )
-
-    async def _persist(self):
-        rows = list(map(self._entity_to_row, self._seen))
-        self._seen.clear()
-        self._transaction.add_all(rows)
 
 
 __all__ = ["CategoryRepository"]
