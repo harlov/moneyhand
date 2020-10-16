@@ -12,3 +12,13 @@ class AbstractCategoryRepository(abc.ABC):
     @abc.abstractmethod
     async def list(self) -> List[entities.Category]:
         ...
+
+
+class AbstractIncomeRepository(abc.ABC):
+    @abc.abstractmethod
+    async def save(self, income: entities.Income) -> None:
+        ...
+
+    @abc.abstractmethod
+    async def get(self) -> entities.Income:
+        ...

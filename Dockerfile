@@ -10,7 +10,7 @@ RUN poetry install -v --no-dev
 
 
 FROM base as dev
-RUN poetry install -v
+#RUN poetry install -v
 COPY . .
 
 FROM base as prod

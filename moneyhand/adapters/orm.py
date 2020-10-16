@@ -25,3 +25,10 @@ class Category(Base):
 
     id = ID()
     name = sa.Column(sa.String)
+
+
+class Income(Base):
+    __tablename__ = "incomes"
+    id = ID()
+    seq_num = sa.Column(sa.Integer)
+    amount = sa.Column(sa.Float)

@@ -12,7 +12,7 @@ import sqlalchemy.dialects.postgresql as pg
 
 
 # revision identifiers, used by Alembic.
-revision = 'b7f6a29e722c'
+revision = "b7f6a29e722c"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -21,8 +21,8 @@ depends_on = None
 def upgrade():
     op.create_table(
         "categories",
-        sa.Column('id', pg.UUID, primary_key=True),
-        sa.Column('name', sa.String, nullable=False),
+        sa.Column("id", pg.UUID, primary_key=True),
+        sa.Column("name", sa.String, nullable=False),
     )
 
 

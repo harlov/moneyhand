@@ -3,17 +3,17 @@ from typing import List
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncTransaction, AsyncSessionTransaction, \
-    AsyncSession
+from sqlalchemy.ext.asyncio import (
+    AsyncSessionTransaction,
+)
 
-from moneyhand.adapters.unit_of_work_context import UnitOfWorkContext
 from moneyhand.core import entities
 from moneyhand.core.repository import AbstractCategoryRepository
-from moneyhand.adapters import sql_tables
+from moneyhand.core.repository import AbstractIncomeRepository
 from moneyhand.adapters import orm
 
 
-class CategoryRepository(AbstractCategoryRepository):
+class BaseAlchemyRepository:
     def __init__(self, uow_context_cv: ContextVar):
         self._context_cv = uow_context_cv
 
@@ -21,10 +21,10 @@ class CategoryRepository(AbstractCategoryRepository):
     def _transaction(self) -> AsyncSessionTransaction:
         return self._context_cv.get().session
 
+
+class CategoryRepository(BaseAlchemyRepository, AbstractCategoryRepository):
     async def add(self, category: entities.Category) -> None:
-        self._transaction.add(
-            self._entity_to_row(category)
-        )
+        self._transaction.add(self._entity_to_row(category))
 
     async def list(self) -> List[entities.Category]:
         res = await self._transaction.execute(select(orm.Category))
@@ -43,4 +43,28 @@ class CategoryRepository(AbstractCategoryRepository):
         )
 
 
-__all__ = ["CategoryRepository"]
+class IncomeRepository(BaseAlchemyRepository, AbstractIncomeRepository):
+    async def save(self, income: entities.Income) -> None:
+        self._transaction.add(self._entity_to_row(income, 1))
+        self._transaction.add(self._entity_to_row(income, 2))
+
+    async def get(self) -> entities.Income:
+        res = await self._transaction.execute(select(orm.Income))
+        income = entities.Income()
+
+        for row in res.scalars():
+            income.set_for(row.seq_num, row.amount)
+
+        return income
+
+    def _entity_to_row(self, income: entities.Income, part):
+        part_obj = getattr(income, f"part_{part}")
+
+        return orm.Income(
+            id=str(part_obj.id),
+            seq_num=part,
+            amount=part_obj.amount,
+        )
+
+
+__all__ = ["CategoryRepository", "IncomeRepository"]

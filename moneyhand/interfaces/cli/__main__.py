@@ -30,6 +30,11 @@ def categories():
     pass
 
 
+@cli.group()
+def income():
+    pass
+
+
 @categories.command(name="list")
 @coro
 async def list_categories():
@@ -41,12 +46,28 @@ async def list_categories():
 
 
 @categories.command(name="add")
-@click.option('--name', prompt='Category name',
-              help='The name of a category.')
+@click.option("--name", prompt="Category name", help="The name of a category.")
 @coro
 async def add_category(name: str):
-    category = await service.create_category(name)
+    category = await service.create_category(name=name)
     print(f"New category {name} was created. ID = {category.id}")
+
+
+@income.command(name="get")
+@coro
+async def get_incomes():
+    click.echo("Income: ")
+    i = await service.get_income()
+    click.echo(i)
+
+
+@income.command(name="set")
+@click.option("--part", prompt="Part sequence number", type=int)
+@click.option("--amount", prompt="Amount", type=float)
+@coro
+async def set_income(part: int, amount: float):
+    i = await service.set_income(part=part, amount=amount)
+    click.echo(i)
 
 
 async def main():
@@ -54,5 +75,6 @@ async def main():
     service = await create_service()
     cli()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     loop.run_until_complete(main())
