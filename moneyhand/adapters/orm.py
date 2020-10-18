@@ -32,3 +32,12 @@ class Income(Base):
     id = ID()
     seq_num = sa.Column(sa.Integer)
     amount = sa.Column(sa.Float)
+
+
+class SpendingPlanItem(Base):
+    __tablename__ = "spending_plan_items"
+
+    id = ID()
+    category_id = sa.Column(pg.UUID())
+    seq_num = sa.Column(sa.Integer)
+    amount = sa.Column(sa.Float)

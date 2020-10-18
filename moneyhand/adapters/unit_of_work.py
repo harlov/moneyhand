@@ -10,7 +10,11 @@ from alembic.config import Config as AlembicConfig
 from moneyhand.adapters import orm
 from moneyhand.adapters.unit_of_work_context import UnitOfWorkContext
 from moneyhand.core.unit_of_work import AbstractUnitOfWork
-from moneyhand.adapters.repository import CategoryRepository, IncomeRepository
+from moneyhand.adapters.repository import (
+    CategoryRepository,
+    IncomeRepository,
+    SpendingPlanRepository,
+)
 from moneyhand import config
 
 
@@ -28,6 +32,7 @@ class UnitOfWork(AbstractUnitOfWork):
         self._context = contextvars.ContextVar("_context")
         self.category = CategoryRepository(self._context)
         self.income = IncomeRepository(self._context)
+        self.spending_plan = SpendingPlanRepository(self._context)
 
     async def __aenter__(self):
         await super().__aenter__()

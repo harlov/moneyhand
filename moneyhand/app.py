@@ -1,6 +1,5 @@
 from .adapters.unit_of_work import UnitOfWork
 from .core.service import Service
-from .interfaces.rest import RESTInterface
 
 
 async def create_service() -> Service:

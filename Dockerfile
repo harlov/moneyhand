@@ -10,8 +10,13 @@ RUN poetry install -v --no-dev
 
 
 FROM base as dev
-#RUN poetry install -v
+ENV PYTHONPATH=/usr/src/app
+RUN poetry install -v
 COPY . .
+
+
+FROM dev as tests
+CMD ./scripts/test.sh
 
 FROM base as prod
 COPY . .

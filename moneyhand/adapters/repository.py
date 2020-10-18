@@ -1,8 +1,8 @@
 from contextvars import ContextVar
-from typing import List
-from uuid import UUID
+from typing import List, Optional
+from uuid import UUID, uuid4
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import (
     AsyncSessionTransaction,
 )
@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import (
 from moneyhand.core import entities
 from moneyhand.core.repository import AbstractCategoryRepository
 from moneyhand.core.repository import AbstractIncomeRepository
+from moneyhand.core.repository import AbstractSpendingPlanRepository
 from moneyhand.adapters import orm
 
 
@@ -23,6 +24,12 @@ class BaseAlchemyRepository:
 
 
 class CategoryRepository(BaseAlchemyRepository, AbstractCategoryRepository):
+    async def get(self, pk: UUID) -> Optional[entities.Category]:
+        res = await self._transaction.execute(
+            select(orm.Category).filter(orm.Category.id == str(pk)).limit(1)
+        )
+        return self._row_to_entity(res.scalar())
+
     async def add(self, category: entities.Category) -> None:
         self._transaction.add(self._entity_to_row(category))
 
@@ -57,14 +64,64 @@ class IncomeRepository(BaseAlchemyRepository, AbstractIncomeRepository):
 
         return income
 
-    def _entity_to_row(self, income: entities.Income, part):
+    def _entity_to_row(self, income: entities.Income, part) -> orm.Income:
         part_obj = getattr(income, f"part_{part}")
 
         return orm.Income(
-            id=str(part_obj.id),
+            id=str(uuid4()),
             seq_num=part,
             amount=part_obj.amount,
         )
 
 
-__all__ = ["CategoryRepository", "IncomeRepository"]
+class SpendingPlanRepository(BaseAlchemyRepository, AbstractSpendingPlanRepository):
+    async def save(self, plan: entities.SpendingPlan) -> None:
+        await self._transaction.execute(delete(orm.SpendingPlanItem))
+        for item in plan.items:
+            self._transaction.add(self._item_to_row(item, 1))
+            self._transaction.add(self._item_to_row(item, 2))
+
+    async def get(self) -> entities.SpendingPlan:
+        res = await self._transaction.execute(select(orm.SpendingPlanItem))
+        return self._row_to_entity(res.scalars())
+
+    def _item_to_row(
+        self, item: entities.SpendingPlanItem, part: int
+    ) -> orm.SpendingPlanItem:
+        return orm.SpendingPlanItem(
+            id=str(uuid4()),
+            category_id=str(item.category_id),
+            amount=getattr(item, f"part_{part}").amount,
+            seq_num=part,
+        )
+
+    def _item_row_to_entity(
+        self, item_row: orm.SpendingPlanItem
+    ) -> entities.SpendingPlanItem:
+        return entities.SpendingPlanItem(
+            category_id=item_row.category_id,
+            amount=item_row.amount,
+        )
+
+    def _row_to_entity(
+        self, item_rows: List[orm.SpendingPlanItem]
+    ) -> entities.SpendingPlan:
+        entity_items = {}
+
+        for item in item_rows:
+            entity_item: entities.SpendingPlanItem
+            try:
+                entity_item = entity_items[item.category_id]
+            except KeyError:
+                entity_items[
+                    item.category_id
+                ] = entity_item = entities.SpendingPlanItem(
+                    category_id=item.category_id
+                )
+
+            entity_item.set_for(item.seq_num, item.amount)
+
+        return entities.SpendingPlan(items=list(entity_items.values()))
+
+
+__all__ = ["CategoryRepository", "IncomeRepository", ""]

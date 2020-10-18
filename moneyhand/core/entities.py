@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 from uuid import uuid4
 from pydantic import BaseModel, Field
@@ -9,13 +9,24 @@ def new_id() -> UUID:
     return uuid4()
 
 
+CURRENCY_RUB = "RUB"
+
+
 class Category(BaseModel):
     id: UUID
     name: str
 
+    @validator("name")
+    def name_must_be_not_empty(cls, name: str) -> str:
+        name = name.strip()
+
+        if not name:
+            raise ValueError("must be not empty")
+
+        return name
+
 
 class IncomePart(BaseModel):
-    id: Optional[UUID] = Field(default_factory=new_id)
     amount: Optional[float] = 0.0
 
     @validator("amount")
@@ -32,7 +43,7 @@ class Income(BaseModel):
 
     @property
     def currency(self) -> str:
-        return "RUB."
+        return CURRENCY_RUB
 
     def set_for(self, part: int, amount: float) -> None:
         if not (3 > part > 0):
@@ -45,11 +56,44 @@ class Income(BaseModel):
     def total(self):
         return self.part_1.amount + self.part_2.amount
 
-    def __str__(self):
-        return f"""
-        Income:
-            part 1: {self.part_1.amount} {self.currency}.
-            part 2: {self.part_2.amount} {self.currency}.
-        ---
-        Total: {self.part_1.amount + self.part_2.amount} {self.currency}.
-        """
+
+class SpendingPart(BaseModel):
+    amount: Optional[float] = 0.0
+
+
+class SpendingPlanItem(BaseModel):
+    category_id: UUID
+    part_1: Optional[SpendingPart] = SpendingPart()
+    part_2: Optional[SpendingPart] = SpendingPart()
+
+    @property
+    def total(self):
+        return self.part_1.amount + self.part_2.amount
+
+    @property
+    def currency(self):
+        return CURRENCY_RUB
+
+    def set_for(self, part: int, amount: float) -> None:
+        if not (3 > part > 0):
+            raise ValueError("must be between 1 and 2")
+
+        attr_name = f"part_{part}"
+        setattr(self, attr_name, SpendingPart(amount=amount))
+
+
+class SpendingPlan(BaseModel):
+    items: List[SpendingPlanItem] = Field(default_factory=list)
+
+    def set_for_category(self, category_id: UUID, part: int, amount: float) -> None:
+        target_item: SpendingPlanItem
+
+        for item in self.items:
+            if item.category_id == category_id:
+                target_item = item
+                break
+        else:
+            target_item = SpendingPlanItem(category_id=category_id)
+            self.items.append(target_item)
+
+        target_item.set_for(part, amount)
