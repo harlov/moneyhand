@@ -30,4 +30,4 @@ services:
       - postgresql
     entrypoint: /bin/run_telegram_bot
     env_file:
-      - conf/telegram_bot.env
+      - conf/config.env

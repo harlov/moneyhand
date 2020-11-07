@@ -32,22 +32,22 @@ async def test_set_income(service_in_memory: Service):
 
 
 async def test_set_spend_for_category(
-        service_in_memory: Service,
-        unit_of_work: AbstractUnitOfWork,
-        category_food: entities.Category,
-        category_rent: entities.Category,
-    ):
+    service_in_memory: Service,
+    unit_of_work: AbstractUnitOfWork,
+    category_food: entities.Category,
+    category_rent: entities.Category,
+):
     async with unit_of_work:
         await unit_of_work.category.add(category_food)
         await unit_of_work.category.add(category_rent)
         await unit_of_work.commit()
 
-    res = await service_in_memory.set_spend_for_category(category_food.id,
-                                                               10000.0)
+    res = await service_in_memory.set_spend_for_category(category_food.id, 1, 10000.0)
 
     assert res.items == [
         entities.SpendingPlanItem(
             category_id=category_food.id,
-            amount=10000.0,
+            part_1=10000.0,
+            part_2=0.0
         )
     ]

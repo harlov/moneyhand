@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional, List
 from uuid import UUID
 from uuid import uuid4
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validators
 from pydantic import validator
 
 
@@ -29,14 +29,7 @@ class Category(BaseModel):
 
 
 class IncomePart(BaseModel):
-    amount: Optional[float] = 0.0
-
-    @validator("amount")
-    def amount_must_be_not_negative(cls, amount: int) -> int:
-        # TODO: move into separated validators package
-        if amount < 0:
-            raise ValueError("must be not negative")
-        return amount
+    amount: Optional[float] = Field(default=0.0, ge=0.0)
 
 
 class Income(BaseModel):
@@ -59,18 +52,14 @@ class Income(BaseModel):
         return self.part_1.amount + self.part_2.amount
 
 
-class SpendingPart(BaseModel):
-    amount: Optional[float] = 0.0
-
-
 class SpendingPlanItem(BaseModel):
     category_id: UUID
-    part_1: Optional[SpendingPart] = SpendingPart()
-    part_2: Optional[SpendingPart] = SpendingPart()
+    part_1: Optional[float] = 0.0
+    part_2: Optional[float] = 0.0
 
     @property
     def total(self):
-        return self.part_1.amount + self.part_2.amount
+        return self.part_1 + self.part_2
 
     @property
     def currency(self):
@@ -81,7 +70,7 @@ class SpendingPlanItem(BaseModel):
             raise ValueError("must be between 1 and 2")
 
         attr_name = f"part_{part}"
-        setattr(self, attr_name, SpendingPart(amount=amount))
+        setattr(self, attr_name, amount)
 
 
 class SpendingPlan(BaseModel):
@@ -102,11 +91,11 @@ class SpendingPlan(BaseModel):
 
     @property
     def total_part_1(self) -> float:
-        return sum((item.part_1.amount for item in self.items))
+        return sum((item.part_1 for item in self.items))
 
     @property
     def total_part_2(self) -> float:
-        return sum((item.part_2.amount for item in self.items))
+        return sum((item.part_2 for item in self.items))
 
 
 class BalanceReport(BaseModel):

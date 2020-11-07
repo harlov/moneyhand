@@ -97,16 +97,8 @@ class SpendingPlanRepository(BaseAlchemyRepository, AbstractSpendingPlanReposito
         return orm.SpendingPlanItem(
             id=str(uuid4()),
             category_id=str(item.category_id),
-            amount=getattr(item, f"part_{part}").amount,
+            amount=getattr(item, f"part_{part}"),
             seq_num=part,
-        )
-
-    def _item_row_to_entity(
-        self, item_row: orm.SpendingPlanItem
-    ) -> entities.SpendingPlanItem:
-        return entities.SpendingPlanItem(
-            category_id=item_row.category_id,
-            amount=item_row.amount,
         )
 
     def _row_to_entity(

@@ -27,6 +27,13 @@ def repository_category_in_memory() -> Type[AbstractCategoryRepository]:
         async def get(self, pk: UUID) -> Optional[entities.Category]:
             return self.collection.get(pk)
 
+        async def find(self, name: str) -> Optional[entities.Category]:
+            for item in self.collection.values():
+                if item.name == name:
+                    return item
+
+            return None
+
         async def list(self) -> List[entities.Category]:
             return list(self.collection.values())
 
