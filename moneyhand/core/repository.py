@@ -15,6 +15,10 @@ class AbstractCategoryRepository(abc.ABC):
         ...
 
     @abc.abstractmethod
+    async def find(self, name: str) -> Optional[entities.Category]:
+        ...
+
+    @abc.abstractmethod
     async def list(self) -> List[entities.Category]:
         ...
 

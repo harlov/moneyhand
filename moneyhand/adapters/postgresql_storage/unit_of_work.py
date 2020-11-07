@@ -1,21 +1,15 @@
-import logging
-
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, AsyncSession
 
 import contextvars
-import alembic
-from alembic.config import Config as AlembicConfig
-
-
-from moneyhand.adapters import orm
-from moneyhand.adapters.unit_of_work_context import UnitOfWorkContext
+from moneyhand.adapters.postgresql_storage.unit_of_work_context import UnitOfWorkContext
 from moneyhand.core.unit_of_work import AbstractUnitOfWork
-from moneyhand.adapters.repository import (
+from moneyhand.adapters.postgresql_storage.repository import (
     CategoryRepository,
     IncomeRepository,
     SpendingPlanRepository,
 )
 from moneyhand import config
+from . import helpers
 
 
 class UnitOfWork(AbstractUnitOfWork):
@@ -49,17 +43,7 @@ class UnitOfWork(AbstractUnitOfWork):
         self._context.set(None)
 
     async def setup(self):
-        adapters_dir = config.BASE_DIR / "adapters"
-
-        alembic_ini_path = str(adapters_dir / "alembic.ini")
-        migrations_path = str(adapters_dir / "migrations")
-
-        alembic_config = AlembicConfig(alembic_ini_path)
-        alembic_config.set_main_option(
-            "sqlalchemy.url", f"postgresql://{config.STORAGE_URI}"
-        )
-        alembic_config.set_main_option("script_location", migrations_path)
-        alembic.command.upgrade(alembic_config, "head")
+        await helpers.migrate()
 
     async def rollback(self):
         c: UnitOfWorkContext = self._context.get()

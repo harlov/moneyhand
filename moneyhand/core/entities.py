@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Optional, List
 from uuid import UUID
 from uuid import uuid4
@@ -97,3 +99,23 @@ class SpendingPlan(BaseModel):
             self.items.append(target_item)
 
         target_item.set_for(part, amount)
+
+    @property
+    def total_part_1(self) -> float:
+        return sum((item.part_1.amount for item in self.items))
+
+    @property
+    def total_part_2(self) -> float:
+        return sum((item.part_2.amount for item in self.items))
+
+
+class BalanceReport(BaseModel):
+    part_1: float
+    part_2: float
+
+    @classmethod
+    def create(cls, income: Income, spending_plan: SpendingPlan) -> BalanceReport:
+        return BalanceReport(
+            part_1=income.part_1.amount - spending_plan.total_part_1,
+            part_2=income.part_2.amount - spending_plan.total_part_2,
+        )

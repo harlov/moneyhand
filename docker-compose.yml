@@ -12,6 +12,8 @@ services:
     environment:
       POSTGRES_PASSWORD: "password"
 
+    ports:
+    - 5432:5432
 
   cli:
     build:
@@ -19,3 +21,13 @@ services:
       target: cli
     depends_on:
       - postgresql
+
+  telegram_bot:
+    build:
+      context: .
+      target: telegram_bot
+    depends_on:
+      - postgresql
+    entrypoint: /bin/run_telegram_bot
+    env_file:
+      - conf/telegram_bot.env

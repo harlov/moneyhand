@@ -25,4 +25,8 @@ COPY . .
 FROM prod as cli
 COPY scripts/cli.sh /bin/cli
 
+
+FROM prod as telegram_bot
+COPY scripts/run_telegram_bot.sh /bin/run_telegram_bot
+
 CMD bash

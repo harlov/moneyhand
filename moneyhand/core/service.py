@@ -3,7 +3,7 @@ from uuid import UUID
 from .unit_of_work import AbstractUnitOfWork
 from . import entities
 from . import errors
-from typing import List
+from typing import List, Optional
 
 
 class Service:
@@ -20,6 +20,10 @@ class Service:
     async def get_categories(self) -> List[entities.Category]:
         async with self.uow:
             return await self.uow.category.list()
+
+    async def find_category(self, name: str) -> Optional[entities.Category]:
+        async with self.uow:
+            return await self.uow.category.find(name)
 
     async def set_income(self, part: int, amount: float) -> entities.Income:
         async with self.uow:
@@ -59,3 +63,11 @@ class Service:
     async def get_spending_plan(self) -> entities.SpendingPlan:
         async with self.uow:
             return await self.uow.spending_plan.get()
+
+    async def get_balance_report(self) -> entities.BalanceReport:
+        async with self.uow:
+            income = await self.uow.income.get()
+            spending_plan = await self.uow.spending_plan.get()
+            return entities.BalanceReport.create(
+                income=income, spending_plan=spending_plan
+            )

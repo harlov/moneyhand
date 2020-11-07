@@ -11,7 +11,7 @@ from moneyhand.core import entities
 from moneyhand.core.repository import AbstractCategoryRepository
 from moneyhand.core.repository import AbstractIncomeRepository
 from moneyhand.core.repository import AbstractSpendingPlanRepository
-from moneyhand.adapters import orm
+from moneyhand.adapters.postgresql_storage import orm
 
 
 class BaseAlchemyRepository:
@@ -27,6 +27,12 @@ class CategoryRepository(BaseAlchemyRepository, AbstractCategoryRepository):
     async def get(self, pk: UUID) -> Optional[entities.Category]:
         res = await self._transaction.execute(
             select(orm.Category).filter(orm.Category.id == str(pk)).limit(1)
+        )
+        return self._row_to_entity(res.scalar())
+
+    async def find(self, name: str) -> Optional[entities.Category]:
+        res = await self._transaction.execute(
+            select(orm.Category).filter(orm.Category.name == name)
         )
         return self._row_to_entity(res.scalar())
 
