@@ -10,6 +10,11 @@ class AbstractUnitOfWork(abc.ABC):
     income: AbstractIncomeRepository
     spending_plan: AbstractSpendingPlanRepository
 
+    autocommit: bool
+
+    def __init__(self, autocommit: bool = True) -> None:
+        self.autocommit = autocommit
+
     @abc.abstractmethod
     async def commit(self):
         ...
@@ -22,4 +27,7 @@ class AbstractUnitOfWork(abc.ABC):
         pass
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+        if exc_type is None and self.autocommit:
+            await self.commit()
+        else:
+            await self.rollback()

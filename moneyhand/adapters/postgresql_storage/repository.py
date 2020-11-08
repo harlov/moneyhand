@@ -2,6 +2,8 @@ from contextvars import ContextVar
 from typing import List, Optional
 from uuid import UUID, uuid4
 
+from moneyhand.core.entities import CategoryType
+from sqlalchemy import sql
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import (
     AsyncSessionTransaction,
@@ -11,7 +13,7 @@ from moneyhand.core import entities
 from moneyhand.core.repository import AbstractCategoryRepository
 from moneyhand.core.repository import AbstractIncomeRepository
 from moneyhand.core.repository import AbstractSpendingPlanRepository
-from moneyhand.adapters.postgresql_storage import orm
+from moneyhand.adapters.postgresql_storage import orm, helpers
 
 
 class BaseAlchemyRepository:
@@ -22,13 +24,29 @@ class BaseAlchemyRepository:
     def _transaction(self) -> AsyncSessionTransaction:
         return self._context_cv.get().session
 
+    async def _upsert_row(self, row_class: orm.Base, _set_row_attributes, entity):
+        res = await self._transaction.execute(
+            select(row_class).filter(row_class.id == str(entity.id)).limit(1)
+        )
+        row = res.scalar()
+        if row is None:
+            row = row_class()
+
+        _set_row_attributes(row, entity)
+        return row
+
 
 class CategoryRepository(BaseAlchemyRepository, AbstractCategoryRepository):
     async def get(self, pk: UUID) -> Optional[entities.Category]:
-        res = await self._transaction.execute(
-            select(orm.Category).filter(orm.Category.id == str(pk)).limit(1)
-        )
-        return self._row_to_entity(res.scalar())
+        res = (
+            await self._transaction.execute(
+                select(orm.Category).filter(orm.Category.id == str(pk)).limit(1)
+            )
+        ).scalar()
+        if res is None:
+            return None
+
+        return self._row_to_entity(res)
 
     async def find(self, name: str) -> Optional[entities.Category]:
         res = await self._transaction.execute(
@@ -36,90 +54,168 @@ class CategoryRepository(BaseAlchemyRepository, AbstractCategoryRepository):
         )
         return self._row_to_entity(res.scalar())
 
-    async def add(self, category: entities.Category) -> None:
-        self._transaction.add(self._entity_to_row(category))
+    async def save(self, category: entities.Category) -> None:
+        row = await self._upsert_row(orm.Category, self._set_row_attributes, category)
+        self._transaction.add(row)
 
     async def list(self) -> List[entities.Category]:
         res = await self._transaction.execute(select(orm.Category))
         return [self._row_to_entity(row) for row in res.scalars()]
 
-    def _row_to_entity(self, row: dict) -> entities.Category:
+    @staticmethod
+    def _row_to_entity(row: dict) -> entities.Category:
         return entities.Category(
-            id=UUID(row.id),
-            name=row.name,
+            id=UUID(row.id), name=row.name, type=CategoryType(row.type)
         )
 
-    def _entity_to_row(self, category: entities.Category):
-        return orm.Category(
-            id=str(category.id),
-            name=category.name,
-        )
+    @staticmethod
+    def _set_row_attributes(sa_row: orm.Category, category: entities.Category) -> None:
+        sa_row.id = str(category.id)
+        sa_row.name = category.name
+        sa_row.type = category.type
 
 
 class IncomeRepository(BaseAlchemyRepository, AbstractIncomeRepository):
     async def save(self, income: entities.Income) -> None:
-        self._transaction.add(self._entity_to_row(income, 1))
-        self._transaction.add(self._entity_to_row(income, 2))
+        row = await self._upsert_row(orm.Income, self._set_row_attributes, income)
+        self._transaction.add(row)
 
-    async def get(self) -> entities.Income:
-        res = await self._transaction.execute(select(orm.Income))
-        income = entities.Income()
+        await self._transaction.execute(
+            delete(orm.IncomeItem).filter(orm.IncomeItem.income_id == str(income.id))
+        )
 
-        for row in res.scalars():
-            income.set_for(row.seq_num, row.amount)
+        for i in (1, 2):
+            self._transaction.add(
+                orm.IncomeItem(
+                    id=str(entities.new_id()),
+                    income_id=str(income.id),
+                    seq=i,
+                    amount=getattr(income, f"part_{i}"),
+                )
+            )
+
+    async def get(self) -> Optional[entities.Income]:
+        table = orm.Income.__table__
+        item_table = orm.IncomeItem.__table__
+
+        res = (
+            await self._transaction.execute(
+                sql.select(
+                    table.c.id,
+                    table.c.is_template,
+                    helpers.jsonb_agg(
+                        helpers.json_build_object(
+                            helpers.s("seq"),
+                            item_table.c.seq,
+                            helpers.s("amount"),
+                            item_table.c.amount,
+                        )
+                    ).label("items"),
+                )
+                .join(item_table)
+                .group_by(table.c.id)
+            )
+        ).first()
+
+        if res is None:
+            return None
+
+        income = entities.Income(
+            id=res.id,
+            is_template=res.is_template,
+        )
+
+        for item in res.items:
+            income.set_for(item["seq"], item["amount"])
 
         return income
 
-    def _entity_to_row(self, income: entities.Income, part) -> orm.Income:
-        part_obj = getattr(income, f"part_{part}")
-
-        return orm.Income(
-            id=str(uuid4()),
-            seq_num=part,
-            amount=part_obj.amount,
-        )
+    @staticmethod
+    def _set_row_attributes(sa_row: orm.Income, income: entities.Income) -> None:
+        sa_row.id = str(income.id)
+        sa_row.is_template = income.is_template
 
 
 class SpendingPlanRepository(BaseAlchemyRepository, AbstractSpendingPlanRepository):
     async def save(self, plan: entities.SpendingPlan) -> None:
-        await self._transaction.execute(delete(orm.SpendingPlanItem))
-        for item in plan.items:
-            self._transaction.add(self._item_to_row(item, 1))
-            self._transaction.add(self._item_to_row(item, 2))
+        row = await self._upsert_row(orm.SpendingPlan, self._set_row_attributes, plan)
 
-    async def get(self) -> entities.SpendingPlan:
-        res = await self._transaction.execute(select(orm.SpendingPlanItem))
-        return self._row_to_entity(res.scalars())
+        self._transaction.add(row)
 
-    def _item_to_row(
-        self, item: entities.SpendingPlanItem, part: int
-    ) -> orm.SpendingPlanItem:
-        return orm.SpendingPlanItem(
-            id=str(uuid4()),
-            category_id=str(item.category_id),
-            amount=getattr(item, f"part_{part}"),
-            seq_num=part,
+        await self._transaction.execute(
+            delete(orm.SpendingPlanItem).filter(
+                orm.SpendingPlanItem.spending_plan_id == str(plan.id)
+            )
         )
 
-    def _row_to_entity(
-        self, item_rows: List[orm.SpendingPlanItem]
-    ) -> entities.SpendingPlan:
-        entity_items = {}
-
-        for item in item_rows:
-            entity_item: entities.SpendingPlanItem
-            try:
-                entity_item = entity_items[item.category_id]
-            except KeyError:
-                entity_items[
-                    item.category_id
-                ] = entity_item = entities.SpendingPlanItem(
-                    category_id=item.category_id
+        for item in plan.items:
+            self._transaction.add(
+                orm.SpendingPlanItem(
+                    id=str(entities.new_id()),
+                    spending_plan_id=str(plan.id),
+                    category_id=str(item.category_id),
+                    seq_num=1,
+                    amount=item.part_1,
                 )
+            )
+            self._transaction.add(
+                orm.SpendingPlanItem(
+                    id=str(entities.new_id()),
+                    spending_plan_id=str(plan.id),
+                    category_id=str(item.category_id),
+                    seq_num=2,
+                    amount=item.part_2,
+                )
+            )
 
-            entity_item.set_for(item.seq_num, item.amount)
+    async def get(self) -> Optional[entities.SpendingPlan]:
+        table = orm.SpendingPlan.__table__
+        item_table = orm.SpendingPlanItem.__table__
 
-        return entities.SpendingPlan(items=list(entity_items.values()))
+        res = (
+            await self._transaction.execute(
+                sql.select(
+                    table.c.id,
+                    table.c.is_template,
+                    helpers.jsonb_agg(
+                        helpers.json_build_object(
+                            helpers.s("category_id"),
+                            item_table.c.category_id,
+                            helpers.s("seq"),
+                            item_table.c.seq_num,
+                            helpers.s("amount"),
+                            item_table.c.amount,
+                        )
+                    ).label("items"),
+                )
+                .outerjoin(item_table)
+                .group_by(
+                    table.c.id,
+                )
+            )
+        ).first()
+
+        if res is None:
+            return None
+
+        plan = entities.SpendingPlan(id=res.id, is_template=res.is_template)
+
+        for item in res.items:
+            if item["category_id"] is None:
+                continue
+
+            plan.set_for_category(
+                UUID(item["category_id"]), item["seq"], float(item["amount"])
+            )
+
+        return plan
+
+    @staticmethod
+    def _set_row_attributes(
+        sa_row: orm.SpendingPlan, item: entities.SpendingPlan
+    ) -> None:
+        sa_row.id = str(item.id)
+        sa_row.is_template = item.is_template
 
 
-__all__ = ["CategoryRepository", "IncomeRepository", ""]
+__all__ = ["CategoryRepository", "IncomeRepository"]

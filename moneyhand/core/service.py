@@ -10,11 +10,19 @@ class Service:
     def __init__(self, uow: AbstractUnitOfWork):
         self.uow = uow
 
-    async def create_category(self, name: str) -> entities.Category:
+    async def create_category(
+        self, name: str, type_: entities.CategoryType
+    ) -> entities.Category:
         async with self.uow:
-            category = entities.Category(id=entities.new_id(), name=name)
-            await self.uow.category.add(category)
-            await self.uow.commit()
+            category = entities.Category(id=entities.new_id(), name=name, type=type_)
+            await self.uow.category.save(category)
+            return category
+
+    async def update_category(self, pk: UUID, name: str) -> entities.Category:
+        async with self.uow:
+            category = await self.uow.category.get(pk)
+            category.name = name
+            await self.uow.category.save(category)
             return category
 
     async def get_categories(self) -> List[entities.Category]:
@@ -29,12 +37,11 @@ class Service:
         async with self.uow:
             income = await self.uow.income.get()
             if income is None:
-                income = entities.Income()
+                income = entities.Income(id=entities.new_id(), is_template=True)
 
             income.set_for(part, amount)
 
             await self.uow.income.save(income)
-            await self.uow.commit()
             return income
 
     async def get_income(self) -> entities.Income:
@@ -52,11 +59,12 @@ class Service:
             spending_plan = await self.uow.spending_plan.get()
 
             if spending_plan is None:
-                spending_plan = entities.SpendingPlan()
+                spending_plan = entities.SpendingPlan(
+                    id=entities.new_id(), is_template=True
+                )
 
             spending_plan.set_for_category(category_id, part, amount)
             await self.uow.spending_plan.save(spending_plan)
-            await self.uow.commit()
 
             return await self.uow.spending_plan.get()
 

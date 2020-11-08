@@ -4,21 +4,26 @@ from uuid import UUID
 
 from pydantic import BaseModel
 from pydantic import Field
-from typing import List, Type, Dict
+from typing import Type, Dict
 
 import pytest
+
 
 from moneyhand.core.unit_of_work import AbstractUnitOfWork
 from moneyhand.core.repository import AbstractCategoryRepository
 from moneyhand.core.repository import AbstractIncomeRepository
 from moneyhand.core.repository import AbstractSpendingPlanRepository
+
+from moneyhand.adapters.postgresql_storage.unit_of_work import UnitOfWork
+
+
 from moneyhand.core import entities
 
 
 class Store(BaseModel):
     categories: Dict[UUID, entities.Category] = Field(default_factory=dict)
-    incomes: entities.Income = Field(default_factory=entities.Income)
-    spending_plan: entities.SpendingPlan = Field(default_factory=entities.SpendingPlan)
+    incomes: entities.Income = Field(default_factory=dict)
+    spending_plan: entities.SpendingPlan = Field(default_factory=dict)
 
 
 @pytest.fixture
@@ -27,7 +32,7 @@ def store() -> Store:
 
 
 @pytest.fixture
-def unit_of_work_cls(
+def unit_of_work_memory_cls(
     store,
     repository_category_in_memory,
     repository_income_in_memory,
@@ -46,6 +51,7 @@ def unit_of_work_cls(
         def __init__(self):
             self._store = store
             self._context = contextvars.ContextVar("_context")
+            super(InMemoryUnitOfWork, self).__init__()
 
         async def __aenter__(self):
             await super().__aenter__()
@@ -89,5 +95,10 @@ def unit_of_work_cls(
 
 
 @pytest.fixture
-def unit_of_work(unit_of_work_cls) -> AbstractUnitOfWork:
-    return unit_of_work_cls()
+def unit_of_work_memory(unit_of_work_memory_cls) -> AbstractUnitOfWork:
+    return unit_of_work_memory_cls()
+
+
+@pytest.fixture
+def unit_of_work_pg(test_db):
+    return UnitOfWork()

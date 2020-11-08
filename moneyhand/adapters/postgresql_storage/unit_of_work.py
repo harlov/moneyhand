@@ -27,11 +27,13 @@ class UnitOfWork(AbstractUnitOfWork):
         self.category = CategoryRepository(self._context)
         self.income = IncomeRepository(self._context)
         self.spending_plan = SpendingPlanRepository(self._context)
+        super(UnitOfWork, self).__init__()
 
     async def __aenter__(self):
         await super().__aenter__()
         session = await (AsyncSession(self._engine).__aenter__())
         session_transaction = await session.begin()
+        await session.execute("SET CONSTRAINTS ALL DEFERRED")
         c = UnitOfWorkContext(session=session, session_transaction=session_transaction)
         self._context.set(c)
 

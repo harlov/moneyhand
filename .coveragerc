@@ -1,0 +1,11 @@
+[run]
+branch = True
+omit =
+    moneyhand/adapters/postgresql_storage/migrations/*
+    moneyhand/fixtures/*
+
+[report]
+show_missing = True
+skip_empty = True
+exclude_lines =
+    @abc.abstractmethod

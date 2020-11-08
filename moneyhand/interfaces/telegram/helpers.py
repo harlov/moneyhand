@@ -10,3 +10,7 @@ def keyboard(items_matrix: List[List[str]]) -> types.ReplyKeyboardMarkup:
             [types.KeyboardButton(text=item) for item in row] for row in items_matrix
         ],
     )
+
+
+def unset_keyboard():
+    return types.ReplyKeyboardRemove()

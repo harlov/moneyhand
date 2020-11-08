@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-py.test -x -vvv tests/
+py.test --cov-config=.coveragerc --cov=moneyhand -x -vvv tests/

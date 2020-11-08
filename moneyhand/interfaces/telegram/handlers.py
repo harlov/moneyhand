@@ -2,6 +2,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram import types
 
 from moneyhand.app import create_service
+from moneyhand.core.entities import CategoryType
 from moneyhand.core.service import Service
 
 from moneyhand.interfaces.telegram.app import dp
@@ -16,15 +17,7 @@ service: Service
 @dp.message_handler(commands=["start"])
 async def start(message: types.Message):
     await message.answer(
-        text="Please select action",
-        reply_markup=helpers.keyboard(
-            [
-                ["/get_categories", "/add_category"],
-                ["/get_income", "/set_income"],
-                ["/get_spending_plan", "/set_spend"],
-                ["/get_balance_report"],
-            ]
-        ),
+        text="Please send command", reply_markup=helpers.unset_keyboard()
     )
 
 
@@ -46,7 +39,9 @@ async def get_income(message: types.Message):
 async def get_spending_plan(message: types.Message):
     plan = await service.get_spending_plan()
     categories = await service.get_categories()
-    await message.answer(renders.spending_plan(plan=plan, categories=categories))
+    await message.answer_photo(
+        renders.spending_plan_img(plan=plan, categories=categories)
+    )
 
 
 @dp.message_handler(commands=["get_balance_report"])
@@ -61,13 +56,31 @@ async def get_balance_report(message: types.Message):
 @dp.message_handler(commands="add_category")
 async def add_category_start(message: types.Message):
     await states.AddCategory.name.set()
-    await message.reply("Enter name for a new category:")
+    await message.reply(
+        "Enter name for a new category:", reply_markup=helpers.unset_keyboard()
+    )
 
 
 @dp.message_handler(state=states.AddCategory.name)
+async def add_category_name(message: types.Message, state: FSMContext):
+    await states.AddCategory.next()
+    await state.update_data(name=message.text)
+    await message.reply(
+        "Select type for a new category:",
+        reply_markup=helpers.keyboard([[i.name for i in CategoryType]]),
+    )
+
+
+@dp.message_handler(state=states.AddCategory.type)
 async def add_category_finish(message: types.Message, state: FSMContext):
-    category = await service.create_category(message.text.strip())
-    await message.reply(f"New category {category.name} has created")
+    data = await state.get_data()
+    type_ = CategoryType[message.text]
+    category = await service.create_category(name=data["name"], type_=type_)
+
+    await message.reply(
+        f"New category {category.name} has created",
+        reply_markup=helpers.unset_keyboard(),
+    )
     await state.finish()
 
 
@@ -135,6 +148,55 @@ async def set_spend_finish(message: types.Message, state: FSMContext):
         amount=float(message.text),
     )
     await state.finish()
+
+
+# MODIFY CATEGORY
+
+
+@dp.message_handler(commands="change_category")
+async def change_category_start(message: types.Message, state: FSMContext):
+    await states.ChangeCategory.category.set()
+    categories = await service.get_categories()
+
+    await message.reply(
+        text="Select category: ",
+        reply_markup=helpers.keyboard([[category.name] for category in categories]),
+    )
+
+
+@dp.message_handler(state=states.ChangeCategory.category)
+async def change_category_category(message: types.Message, state: FSMContext):
+    category = await service.find_category(message.text)
+    await state.update_data(category_id=category.id)
+    await states.ChangeCategory.next()
+    await message.reply(
+        text="Select changing attribute: ",
+        reply_markup=helpers.keyboard([["name", "type"]]),
+    )
+
+
+@dp.message_handler(state=states.ChangeCategory.attr_name)
+async def change_category_attr_name(message: types.Message, state: FSMContext):
+    attr_name = message.text
+    await state.update_data(attr_name=attr_name)
+    await states.ChangeCategory.next()
+    await message.reply(
+        text=f"Send new value for {attr_name} attribute: ",
+        reply_markup=helpers.unset_keyboard(),
+    )
+
+
+@dp.message_handler(state=states.ChangeCategory.attr_value)
+async def change_category_finish(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+
+    kwargs = {"pk": data["category_id"], data["attr_name"]: message.text}
+
+    await service.update_category(**kwargs)
+    await state.finish()
+    await message.answer(
+        text="Please send command", reply_markup=helpers.unset_keyboard()
+    )
 
 
 async def setup():

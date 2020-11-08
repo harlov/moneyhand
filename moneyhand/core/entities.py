@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import enum
+
 from typing import Optional, List
 from uuid import UUID
 from uuid import uuid4
@@ -14,9 +16,15 @@ def new_id() -> UUID:
 CURRENCY_RUB = "RUB"
 
 
+class CategoryType(enum.IntEnum):
+    NECESSARY = enum.auto()
+    GOAL = enum.auto()
+
+
 class Category(BaseModel):
     id: UUID
     name: str
+    type: CategoryType
 
     @validator("name")
     def name_must_be_not_empty(cls, name: str) -> str:
@@ -28,13 +36,11 @@ class Category(BaseModel):
         return name
 
 
-class IncomePart(BaseModel):
-    amount: Optional[float] = Field(default=0.0, ge=0.0)
-
-
 class Income(BaseModel):
-    part_1: Optional[IncomePart] = IncomePart()
-    part_2: Optional[IncomePart] = IncomePart()
+    id: UUID
+    is_template: bool
+    part_1: float = Field(default=0.0, ge=0.0)
+    part_2: float = Field(default=0.0, ge=0.0)
 
     @property
     def currency(self) -> str:
@@ -45,11 +51,11 @@ class Income(BaseModel):
             raise ValueError("must be between 1 and 2")
 
         attr_name = f"part_{part}"
-        setattr(self, attr_name, IncomePart(amount=amount))
+        setattr(self, attr_name, amount)
 
     @property
     def total(self):
-        return self.part_1.amount + self.part_2.amount
+        return self.part_1 + self.part_2
 
 
 class SpendingPlanItem(BaseModel):
@@ -74,6 +80,8 @@ class SpendingPlanItem(BaseModel):
 
 
 class SpendingPlan(BaseModel):
+    id: UUID
+    is_template: bool
     items: List[SpendingPlanItem] = Field(default_factory=list)
 
     def set_for_category(self, category_id: UUID, part: int, amount: float) -> None:
@@ -102,9 +110,13 @@ class BalanceReport(BaseModel):
     part_1: float
     part_2: float
 
+    @property
+    def currency(self) -> str:
+        return CURRENCY_RUB
+
     @classmethod
     def create(cls, income: Income, spending_plan: SpendingPlan) -> BalanceReport:
         return BalanceReport(
-            part_1=income.part_1.amount - spending_plan.total_part_1,
-            part_2=income.part_2.amount - spending_plan.total_part_2,
+            part_1=income.part_1 - spending_plan.total_part_1,
+            part_2=income.part_2 - spending_plan.total_part_2,
         )

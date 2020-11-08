@@ -7,7 +7,7 @@ from . import entities
 
 class AbstractCategoryRepository(abc.ABC):
     @abc.abstractmethod
-    async def add(self, category: entities.Category) -> None:
+    async def save(self, category: entities.Category) -> None:
         ...
 
     @abc.abstractmethod
@@ -29,7 +29,7 @@ class AbstractIncomeRepository(abc.ABC):
         ...
 
     @abc.abstractmethod
-    async def get(self) -> entities.Income:
+    async def get(self) -> Optional[entities.Income]:
         ...
 
 
@@ -39,5 +39,5 @@ class AbstractSpendingPlanRepository(abc.ABC):
         ...
 
     @abc.abstractmethod
-    async def get(self) -> entities.SpendingPlan:
+    async def get(self) -> Optional[entities.SpendingPlan]:
         ...
