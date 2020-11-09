@@ -1,7 +1,10 @@
 FROM python:3.8-buster as base
 ENV PYTHONUNBUFFERED=1 \
-    POETRY_VERSION=1.1.2
-RUN pip install "poetry==$POETRY_VERSION" && \
+    POETRY_VERSION=1.1.4
+ENV PATH=${PATH}:/root/.poetry/bin
+
+RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py -o /tmp/get-poetry.py && \
+    python /tmp/get-poetry.py --version $POETRY_VERSION && \
     poetry config virtualenvs.create false
 WORKDIR /usr/src/app
 COPY pyproject.toml .
