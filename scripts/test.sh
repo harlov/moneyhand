@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
 
-py.test --cov-config=.coveragerc --cov=moneyhand -x -vvv tests/
+py.test --postgres="${TEST_POSTGRES_STORAGE}" \
+        --cov-config=.coveragerc --cov=moneyhand \
+         -x -vvv tests/

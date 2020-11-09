@@ -1,17 +1,9 @@
 version: "3.8"
 services:
-  tests:
-    build:
-      context: .
-      target: tests
-    depends_on:
-      - postgresql
-
-  postgresql:
+  main_db:
     image: postgres:13.0
     environment:
       POSTGRES_PASSWORD: "password"
-
     ports:
     - 5432:5432
 
@@ -20,14 +12,32 @@ services:
       context: .
       target: cli
     depends_on:
-      - postgresql
+      - main_db
 
   telegram_bot:
     build:
       context: .
       target: telegram_bot
     depends_on:
-      - postgresql
+      - main_db
     entrypoint: /bin/run_telegram_bot
     env_file:
       - conf/config.env
+
+  test_db:
+    image: postgres:13.0
+    environment:
+      POSTGRES_PASSWORD: "password"
+    ports:
+      - 5433:5432
+
+  tests:
+    build:
+      context: .
+      target: tests
+    depends_on:
+      - test_db
+    env_file:
+      - conf/config.env
+    environment:
+      TEST_POSTGRES_STORAGE: "postgres:password@test_db:5432/postgres"

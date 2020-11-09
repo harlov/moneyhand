@@ -24,5 +24,8 @@ def unused_port():
 
 
 @pytest.fixture(scope="session")
-def docker_client():
-    return docker.from_env()
+def docker_client_factory():
+    def f():
+        return docker.from_env()
+
+    return f

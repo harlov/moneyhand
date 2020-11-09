@@ -41,11 +41,12 @@ def wait_server_up(uri):
 
 @pytest.fixture(scope="session")
 def postgres_uri(
-    request: Any, docker_client: Any, unused_port: Callable, db_name: str
+    request: Any, docker_client_factory: Any, unused_port: Callable, db_name: str
 ) -> Generator[str, None, None]:
     uri = request.config.getoption("postgres")
 
     if not uri:
+        docker_client = docker_client_factory()
         image = f"postgres:{POSTGRESQL_VERSION}"
         if not docker_client.images.list(image):
             docker_client.images.pull(image)

@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import logging
 
-STORAGE_URI = os.getenv("STORAGE_URI", "postgres:password@postgresql/postgres")
+STORAGE_URI = os.getenv("STORAGE_URI")
 DEBUG_SQL = int(os.getenv("DEBUG_SQL", "0"))
 LOG_LEVEL = logging.getLevelName(os.getenv("LOG_LEVEL", "WARNING"))
 
