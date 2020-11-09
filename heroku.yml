@@ -1,0 +1,19 @@
+setup:
+  addons:
+    - plan: heroku-postgresql
+      as: DATABASE
+
+build:
+  docker:
+    bot:
+      dockerfile: Dockerfile
+      target: telegram_bot
+
+release:
+  image: bot
+
+run:
+  bot:
+    image: bot
+    command:
+      - /bin/run_telegram_bot
