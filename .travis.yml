@@ -1,19 +1,30 @@
+language: shell
+os: linux
+
 env:
   - DOCKER_COMPOSE_VERSION=1.27.4
+
+services:
+  - docker
+
+stages:
+  - test && publish
 
 before_install:
   - sudo rm /usr/local/bin/docker-compose
   - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
   - chmod +x docker-compose
   - sudo mv docker-compose /usr/local/bin
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
-before_script:
-  - cp ./conf/config.env.template ./conf/config.env
-
-
-services:
-  - docker
-
-script:
-  - docker-compose build tests
-  - docker-compose run tests
+jobs:
+  include:
+    - stage: test && publish
+      before_script:
+        - cp ./conf/config.env.template ./conf/config.env
+      script:
+        - docker-compose build tests
+        - docker-compose run tests
+        - docker-compose build telegram_bot
+        - docker tag moneyhand_telegram_bot:latest $DOCKER_USERNAME/moneyhand:latest
+        - docker push $DOCKER_USERNAME/moneyhand:latest
