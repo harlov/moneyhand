@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moneyhand-bot-deployment
+  labels:
+    app: moneyhand-bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: moneyhand-bot
+  template:
+    metadata:
+      labels:
+        app: moneyhand-bot
+    spec:
+      containers:
+      - name: moneyhand-bot-worker
+        image: harlov91/moneyhand:latest
+        envFrom:
+          - configMapRef:
+              name: moneyhand-bot-config

@@ -45,7 +45,7 @@ class UnitOfWork(AbstractUnitOfWork):
         self._context.set(None)
 
     async def setup(self):
-        await helpers.migrate()
+        helpers.migrate()
 
     async def rollback(self):
         c: UnitOfWorkContext = self._context.get()
