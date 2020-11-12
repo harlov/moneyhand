@@ -3,6 +3,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 
 from moneyhand import config
+from .auth import AuthMiddleware
 
 bot = Bot(token=config.TELEGRAM_API_TOKEN, parse_mode=types.ParseMode.MARKDOWN_V2)
 
@@ -10,6 +11,7 @@ bot = Bot(token=config.TELEGRAM_API_TOKEN, parse_mode=types.ParseMode.MARKDOWN_V
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 dp.middleware.setup(LoggingMiddleware())
+dp.middleware.setup(AuthMiddleware())
 
 
 async def on_start():

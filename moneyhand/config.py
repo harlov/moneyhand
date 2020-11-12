@@ -10,3 +10,4 @@ LOG_LEVEL = logging.getLevelName(os.getenv("LOG_LEVEL", "WARNING"))
 BASE_DIR = Path(__file__).absolute().parent
 
 TELEGRAM_API_TOKEN = os.getenv("TELEGRAM_API_TOKEN", None)
+TELEGRAM_GOD_USER = os.getenv("TELEGRAM_GOD_USER", None)

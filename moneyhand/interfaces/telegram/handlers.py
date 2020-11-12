@@ -1,5 +1,8 @@
+import logging
+
 from aiogram.dispatcher import FSMContext
 from aiogram import types
+
 
 from moneyhand.app import create_service
 from moneyhand.core.entities import CategoryType
@@ -10,9 +13,19 @@ from moneyhand.interfaces.telegram.app import dp
 from moneyhand.interfaces.telegram import renders, inputs
 from moneyhand.interfaces.telegram import helpers
 from moneyhand.interfaces.telegram import states
+from moneyhand.interfaces.telegram.errors import UnauthorizedUser
 
+log = logging.getLogger(__name__)
 
 service: Service
+
+
+@dp.errors_handler(exception=UnauthorizedUser)
+async def unauthorized(update: types.Update, e):
+    log.error(
+        f"user @{update.message.from_user.username}({update.message.from_user.id}): unauthorized"
+    )
+    await update.message.answer(renders.es("The owls are not what they seem"))
 
 
 @dp.message_handler(commands=["start"])
