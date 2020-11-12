@@ -12,3 +12,9 @@ class EntityNotFound(BaseError):
     def __init__(self, entity_name: str, pk: UUID):
         self.entity_name = entity_name
         self.pk = pk
+
+
+class EntityValidationError(Exception):
+    def __init__(self, field, error):
+        self.field = field
+        self.error = error

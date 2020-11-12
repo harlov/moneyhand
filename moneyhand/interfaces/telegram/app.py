@@ -25,5 +25,6 @@ async def on_start():
             types.BotCommand("/change_category", "Change category attributes"),
             types.BotCommand("/set_income", "Set income"),
             types.BotCommand("/set_spend", "Set spending plan for category"),
+            types.BotCommand("/cancel", "Cancel any scenario"),
         ]
     )

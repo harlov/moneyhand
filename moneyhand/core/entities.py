@@ -5,8 +5,9 @@ import enum
 from typing import Optional, List
 from uuid import UUID
 from uuid import uuid4
-from pydantic import BaseModel, Field, validators
+from pydantic import BaseModel, Field
 from pydantic import validator
+from moneyhand.core.errors import EntityValidationError
 
 
 def new_id() -> UUID:
@@ -48,7 +49,7 @@ class Income(BaseModel):
 
     def set_for(self, part: int, amount: float) -> None:
         if not (3 > part > 0):
-            raise ValueError("must be between 1 and 2")
+            raise EntityValidationError("part", "must be between 1 and 2")
 
         attr_name = f"part_{part}"
         setattr(self, attr_name, amount)
@@ -73,7 +74,7 @@ class SpendingPlanItem(BaseModel):
 
     def set_for(self, part: int, amount: float) -> None:
         if not (3 > part > 0):
-            raise ValueError("must be between 1 and 2")
+            raise EntityValidationError("part", "must be between 1 and 2")
 
         attr_name = f"part_{part}"
         setattr(self, attr_name, amount)
