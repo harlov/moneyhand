@@ -6,4 +6,5 @@ async def create_service() -> Service:
     uow = UnitOfWork()
     await uow.setup()
     service = Service(uow=uow)
+    await service.tenant.ensure_default()
     return service

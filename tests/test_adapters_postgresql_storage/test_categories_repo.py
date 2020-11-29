@@ -1,7 +1,8 @@
 import pytest
 
 from moneyhand.adapters.postgresql_storage.unit_of_work import UnitOfWork
-from moneyhand.core.entities import Category, new_id, CategoryType
+from moneyhand.core.entities import new_id
+from moneyhand.core.entities.categories import CategoryType, Category
 
 pytestmark = pytest.mark.asyncio
 

@@ -1,11 +1,15 @@
 import abc
 
+from .repository import AbstractUserRepository
+from .repository import AbstractTenantRepository
 from .repository import AbstractCategoryRepository
 from .repository import AbstractIncomeRepository
 from .repository import AbstractSpendingPlanRepository
 
 
 class AbstractUnitOfWork(abc.ABC):
+    user: AbstractUserRepository
+    tenant: AbstractTenantRepository
     category: AbstractCategoryRepository
     income: AbstractIncomeRepository
     spending_plan: AbstractSpendingPlanRepository

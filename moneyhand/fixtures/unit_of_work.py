@@ -8,22 +8,24 @@ from typing import Type, Dict
 
 import pytest
 
-
 from moneyhand.core.unit_of_work import AbstractUnitOfWork
 from moneyhand.core.repository import AbstractCategoryRepository
 from moneyhand.core.repository import AbstractIncomeRepository
 from moneyhand.core.repository import AbstractSpendingPlanRepository
-
-from moneyhand.adapters.postgresql_storage.unit_of_work import UnitOfWork
-
+from moneyhand.core.repository import AbstractTenantRepository
+from moneyhand.core.repository import AbstractUserRepository
 
 from moneyhand.core import entities
+
+from moneyhand.adapters.postgresql_storage.unit_of_work import UnitOfWork
 
 
 class Store(BaseModel):
     categories: Dict[UUID, entities.Category] = Field(default_factory=dict)
     incomes: entities.Income = Field(default_factory=dict)
     spending_plan: entities.SpendingPlan = Field(default_factory=dict)
+    tenants: Dict[UUID, entities.Tenant] = Field(default_factory=dict)
+    users: Dict[UUID, entities.User] = Field(default_factory=dict)
 
 
 @pytest.fixture
@@ -37,6 +39,8 @@ def unit_of_work_memory_cls(
     repository_category_in_memory,
     repository_income_in_memory,
     repository_spending_plan_in_memory,
+    repository_tenant_in_memory,
+    repository_user_in_memory,
 ) -> Type[AbstractUnitOfWork]:
     class UnitOfWorkContext(BaseModel):
         class Config:
@@ -45,6 +49,8 @@ def unit_of_work_memory_cls(
         category: AbstractCategoryRepository
         income: AbstractIncomeRepository
         spending_plan: AbstractSpendingPlanRepository
+        tenant: AbstractTenantRepository
+        user: AbstractUserRepository
         temp_store: Store
 
     class InMemoryUnitOfWork(AbstractUnitOfWork):
@@ -61,6 +67,8 @@ def unit_of_work_memory_cls(
                 category=repository_category_in_memory(temp_store),
                 income=repository_income_in_memory(temp_store),
                 spending_plan=repository_spending_plan_in_memory(temp_store),
+                tenant=repository_tenant_in_memory(temp_store),
+                user=repository_user_in_memory(temp_store),
                 temp_store=temp_store,
             )
             self._context.set(c)
@@ -83,6 +91,16 @@ def unit_of_work_memory_cls(
         def spending_plan(self) -> AbstractSpendingPlanRepository:
             c: UnitOfWorkContext = self._context.get()
             return c.spending_plan
+
+        @property
+        def tenant(self) -> AbstractTenantRepository:
+            c: UnitOfWorkContext = self._context.get()
+            return c.tenant
+
+        @property
+        def user(self) -> AbstractUserRepository:
+            c: UnitOfWorkContext = self._context.get()
+            return c.user
 
         async def commit(self):
             c: UnitOfWorkContext = self._context.get()

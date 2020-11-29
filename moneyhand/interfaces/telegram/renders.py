@@ -3,8 +3,6 @@ from uuid import UUID
 
 from aiogram.utils import markdown
 
-markdown
-
 from moneyhand.core import entities
 from moneyhand.adapters import graph_render
 
@@ -24,16 +22,22 @@ def es(s) -> str:
     return markdown.escape_md(s)
 
 
-def categories_list(categories: List[entities.Category]) -> str:
+def categories_list(
+    categories: List[entities.Category],
+) -> str:
     lines = [bold("Categories"), EMPTY, italic("Goals: "), EMPTY]
-    for category in filter(lambda c: c.type == entities.CategoryType.GOAL, categories):
+    for category in filter(
+        lambda c: c.type == entities.CategoryType.GOAL,
+        categories,
+    ):
         lines.append(es(f" - {category.name}"))
 
     lines.append(EMPTY)
     lines.append(italic("Necessary: "))
     lines.append(EMPTY)
     for category in filter(
-        lambda c: c.type == entities.CategoryType.NECESSARY, categories
+        lambda c: c.type == entities.CategoryType.NECESSARY,
+        categories,
     ):
         lines.append(es(f" - {category.name}"))
 
@@ -57,7 +61,10 @@ def normalize_length_to(s: str, length: int, fill_symb=" ") -> str:
     return s + fill_symb * need_to_add
 
 
-def spending_plan_img(plan: entities.SpendingPlan, categories: List[entities.Category]):
+def spending_plan_img(
+    plan: entities.SpendingPlan,
+    categories: List[entities.Category],
+):
     category_map: Dict[UUID, entities.Category] = {
         category.id: category for category in categories
     }

@@ -7,7 +7,9 @@ def category(e: entities.Category) -> str:
     return f"{e.name}        (ID / {e.id})"
 
 
-def categories_list(categories: List[entities.Category]) -> str:
+def categories_list(
+    categories: List[entities.Category],
+) -> str:
     return "\n".join((f" -   {category(c)}" for c in categories))
 
 
@@ -22,7 +24,10 @@ def income(e: entities.Income) -> str:
     )
 
 
-def spending_plan(e: entities.SpendingPlan, categories: List[entities.Category]) -> str:
+def spending_plan(
+    e: entities.SpendingPlan,
+    categories: List[entities.Category],
+) -> str:
 
     categories_map = {c.id: c for c in categories}
 

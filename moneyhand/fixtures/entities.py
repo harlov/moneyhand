@@ -1,18 +1,25 @@
 import pytest
+
+
 from moneyhand.core import entities
+from moneyhand import config
 
 
 @pytest.fixture
 def category_food() -> entities.Category:
     return entities.Category(
-        id=entities.new_id(), name="Food", type=entities.CategoryType.NECESSARY
+        id=entities.new_id(),
+        name="Food",
+        type=entities.CategoryType.NECESSARY,
     )
 
 
 @pytest.fixture
 def category_rent() -> entities.Category:
     return entities.Category(
-        id=entities.new_id(), name="Rent", type=entities.CategoryType.NECESSARY
+        id=entities.new_id(),
+        name="Rent",
+        type=entities.CategoryType.NECESSARY,
     )
 
 
@@ -45,3 +52,17 @@ def income() -> entities.Income:
         part_1=400,
         part_2=200,
     )
+
+
+@pytest.fixture
+def tenant() -> entities.Tenant:
+    return entities.Tenant(
+        id=config.DEFAULT_TENANT_UUID,
+    )
+
+
+@pytest.fixture
+def user(tenant) -> entities.User:
+    u = entities.User.new(name="user", email="user@test.local", password="password")
+    u.link_to_tenant(tenant.id)
+    return u

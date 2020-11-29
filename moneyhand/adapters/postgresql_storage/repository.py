@@ -2,14 +2,15 @@ from contextvars import ContextVar
 from typing import List, Optional
 from uuid import UUID, uuid4
 
-from moneyhand.core.entities import CategoryType
 from sqlalchemy import sql
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import (
     AsyncSessionTransaction,
 )
 
 from moneyhand.core import entities
+from moneyhand.core.repository import AbstractUserRepository
+from moneyhand.core.repository import AbstractTenantRepository
 from moneyhand.core.repository import AbstractCategoryRepository
 from moneyhand.core.repository import AbstractIncomeRepository
 from moneyhand.core.repository import AbstractSpendingPlanRepository
@@ -34,6 +35,93 @@ class BaseAlchemyRepository:
 
         _set_row_attributes(row, entity)
         return row
+
+
+class TenantRepository(BaseAlchemyRepository, AbstractTenantRepository):
+    async def save(self, tenant: entities.Tenant) -> None:
+        row = await self._upsert_row(orm.Tenant, self._set_row_attributes, tenant)
+        self._transaction.add(row)
+
+    async def get(self, pk: UUID) -> Optional[entities.Tenant]:
+        res = (
+            await self._transaction.execute(
+                select(orm.Tenant).filter(orm.Tenant.id == str(pk)).limit(1)
+            )
+        ).scalar()
+        if res is None:
+            return None
+
+        return self._row_to_entity(res)
+
+    @staticmethod
+    def _row_to_entity(row: orm.Tenant) -> entities.Tenant:
+        return entities.Tenant(id=UUID(row.id))
+
+    @staticmethod
+    def _set_row_attributes(sa_row: orm.Tenant, tenant: entities.Tenant) -> None:
+        sa_row.id = str(tenant.id)
+
+
+class UserRepository(BaseAlchemyRepository, AbstractUserRepository):
+    async def save(self, user: entities.User) -> None:
+        row = await self._upsert_row(orm.User, self._set_row_attributes, user)
+        self._transaction.add(row)
+
+        user_tenant_link: orm.TenantUser = (
+            await self._transaction.execute(
+                select(orm.TenantUser).filter(orm.TenantUser.user_id == str(user.id))
+            )
+        ).scalar()
+
+        if user_tenant_link is not None:
+            user_tenant_link.tenant_id = user.tenant_id
+        else:
+            self._transaction.add(
+                orm.TenantUser(
+                    id=str(uuid4()),
+                    user_id=str(user.id),
+                    tenant_id=str(user.tenant_id),
+                )
+            )
+
+    async def get(self, pk: UUID) -> Optional[entities.User]:
+        res = (
+            await self._transaction.execute(
+                select(orm.User).filter(orm.User.id == str(pk)).limit(1)
+            )
+        ).scalar()
+        if res is None:
+            return None
+
+        return self._row_to_entity(res)
+
+    async def find(self, name: str) -> Optional[entities.User]:
+        res = (
+            await self._transaction.execute(
+                select(orm.User).filter(orm.User.name == name)
+            )
+        ).scalar()
+
+        if res is None:
+            return None
+
+        return self._row_to_entity(res)
+
+    @staticmethod
+    def _row_to_entity(row: orm.User) -> entities.User:
+        user = entities.User(
+            id=UUID(row.id), name=row.name, email=row.email, disabled=row.disabled
+        )
+        user._password_hash = row.password_hash
+        return user
+
+    @staticmethod
+    def _set_row_attributes(sa_row: orm.Category, user: entities.User) -> None:
+        sa_row.id = str(user.id)
+        sa_row.name = user.name
+        sa_row.email = user.email
+        sa_row.disabled = user.disabled
+        sa_row.password_hash = user._password_hash
 
 
 class CategoryRepository(BaseAlchemyRepository, AbstractCategoryRepository):
@@ -63,9 +151,11 @@ class CategoryRepository(BaseAlchemyRepository, AbstractCategoryRepository):
         return [self._row_to_entity(row) for row in res.scalars()]
 
     @staticmethod
-    def _row_to_entity(row: dict) -> entities.Category:
+    def _row_to_entity(
+        row: orm.Category,
+    ) -> entities.Category:
         return entities.Category(
-            id=UUID(row.id), name=row.name, type=CategoryType(row.type)
+            id=UUID(row.id), name=row.name, type=entities.CategoryType(row.type)
         )
 
     @staticmethod
@@ -212,10 +302,17 @@ class SpendingPlanRepository(BaseAlchemyRepository, AbstractSpendingPlanReposito
 
     @staticmethod
     def _set_row_attributes(
-        sa_row: orm.SpendingPlan, item: entities.SpendingPlan
+        sa_row: orm.SpendingPlan,
+        item: entities.SpendingPlan,
     ) -> None:
         sa_row.id = str(item.id)
         sa_row.is_template = item.is_template
 
 
-__all__ = ["CategoryRepository", "IncomeRepository"]
+__all__ = [
+    "UserRepository",
+    "TenantRepository",
+    "CategoryRepository",
+    "IncomeRepository",
+    "SpendingPlanRepository",
+]

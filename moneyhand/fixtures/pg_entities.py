@@ -1,6 +1,7 @@
 import pytest
 
-from moneyhand.core.entities import Income, Category, SpendingPlan
+from moneyhand.core.entities import Income, SpendingPlan, Tenant, User
+from moneyhand.core.entities.categories import Category
 from moneyhand.adapters.postgresql_storage.unit_of_work import UnitOfWork
 
 
@@ -46,3 +47,17 @@ async def pg_empty_spending_plan(
         await unit_of_work_pg.spending_plan.save(empty_spending_plan)
 
     return empty_spending_plan
+
+
+@pytest.fixture
+async def pg_tenant(tenant: Tenant, unit_of_work_pg: UnitOfWork):
+    async with unit_of_work_pg:
+        await unit_of_work_pg.tenant.save(tenant)
+
+    return tenant
+
+
+@pytest.fixture
+async def pg_user(user: User, unit_of_work_pg: UnitOfWork):
+    async with unit_of_work_pg:
+        await unit_of_work_pg.user.save(user)

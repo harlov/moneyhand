@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
+
 from moneyhand.core import entities
-from moneyhand.core.entities import Category, SpendingPlan, BalanceReport, Income
 from moneyhand.core.service import Service
 from moneyhand.core.unit_of_work import AbstractUnitOfWork
 from moneyhand.core import errors
@@ -11,7 +11,7 @@ pytestmark = pytest.mark.asyncio
 
 @pytest.fixture
 async def memory_category_food(
-    category_food: Category, unit_of_work_memory: AbstractUnitOfWork
+    category_food: entities.Category, unit_of_work_memory: AbstractUnitOfWork
 ):
     async with unit_of_work_memory:
         await unit_of_work_memory.category.save(category_food)
@@ -20,7 +20,7 @@ async def memory_category_food(
 
 @pytest.fixture
 async def memory_category_rent(
-    category_rent: Category, unit_of_work_memory: AbstractUnitOfWork
+    category_rent: entities.Category, unit_of_work_memory: AbstractUnitOfWork
 ):
     async with unit_of_work_memory:
         await unit_of_work_memory.category.save(category_rent)
@@ -28,7 +28,9 @@ async def memory_category_rent(
 
 
 @pytest.fixture
-async def memory_income(income: Income, unit_of_work_memory: AbstractUnitOfWork):
+async def memory_income(
+    income: entities.Income, unit_of_work_memory: AbstractUnitOfWork
+):
     async with unit_of_work_memory:
         await unit_of_work_memory.income.save(income)
         return income
@@ -36,7 +38,7 @@ async def memory_income(income: Income, unit_of_work_memory: AbstractUnitOfWork)
 
 @pytest.fixture
 async def memory_spending_plan(
-    spending_plan: SpendingPlan,
+    spending_plan: entities.SpendingPlan,
     unit_of_work_memory: AbstractUnitOfWork,
     memory_category_food,
     memory_category_rent,
@@ -48,8 +50,8 @@ async def memory_spending_plan(
 
 async def test_get_categories(
     service_in_memory: Service,
-    memory_category_food: Category,
-    memory_category_rent: Category,
+    memory_category_food: entities.Category,
+    memory_category_rent: entities.Category,
 ):
     assert await service_in_memory.get_categories() == [
         memory_category_food,
@@ -59,7 +61,7 @@ async def test_get_categories(
 
 @pytest.mark.usefixtures("memory_category_food")
 async def test_find_category(
-    service_in_memory: Service, memory_category_rent: Category
+    service_in_memory: Service, memory_category_rent: entities.Category
 ):
     category = await service_in_memory.find_category("Rent")
     assert category == memory_category_rent
@@ -109,7 +111,7 @@ async def test_set_income_if_already_exists(service_in_memory: Service):
     assert res_get == res
 
 
-async def test_get_income(service_in_memory: Service, memory_income: Income):
+async def test_get_income(service_in_memory: Service, memory_income: entities.Income):
     income = await service_in_memory.get_income()
     assert income == memory_income
 
@@ -155,7 +157,7 @@ async def test_set_spend_for_fake_category(
 
 
 async def test_get_spending_plan(
-    service_in_memory: Service, memory_spending_plan: SpendingPlan
+    service_in_memory: Service, memory_spending_plan: entities.SpendingPlan
 ):
     plan = await service_in_memory.get_spending_plan()
     assert plan == memory_spending_plan
@@ -164,7 +166,7 @@ async def test_get_spending_plan(
 @pytest.mark.usefixtures("memory_income", "memory_spending_plan")
 async def test_get_balance_report(service_in_memory: Service):
     balance = await service_in_memory.get_balance_report()
-    assert balance == BalanceReport(
+    assert balance == entities.BalanceReport(
         part_1=50.0,
         part_2=-100.0,
     )

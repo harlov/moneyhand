@@ -1,14 +1,20 @@
 from uuid import UUID
 
-from .unit_of_work import AbstractUnitOfWork
-from . import entities
-from . import errors
+
+from moneyhand.core.unit_of_work import AbstractUnitOfWork
+from moneyhand.core import entities
+from moneyhand.core import errors
 from typing import List, Optional
+
+from .tenant import TenantService
 
 
 class Service:
+    tenant: TenantService
+
     def __init__(self, uow: AbstractUnitOfWork):
         self.uow = uow
+        self.tenant = TenantService(uow=uow)
 
     async def create_category(
         self, name: str, type_: entities.CategoryType
@@ -68,7 +74,9 @@ class Service:
 
             return await self.uow.spending_plan.get()
 
-    async def get_spending_plan(self) -> entities.SpendingPlan:
+    async def get_spending_plan(
+        self,
+    ) -> entities.SpendingPlan:
         async with self.uow:
             return await self.uow.spending_plan.get()
 

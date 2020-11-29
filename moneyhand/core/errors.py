@@ -18,3 +18,7 @@ class EntityValidationError(Exception):
     def __init__(self, field, error):
         self.field = field
         self.error = error
+
+
+class AuthCredentialsInvalidError(Exception):
+    pass

@@ -2,7 +2,6 @@ from typing import Any
 
 import sqlalchemy as sa
 import sqlalchemy.dialects.postgresql as pg
-from sqlalchemy.orm import relationship
 
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -19,6 +18,30 @@ class ID(sa.Column):
                 primary_key=True,
             )
         )
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = ID()
+    name = sa.Column(sa.String, nullable=False)
+    email = sa.Column(sa.String, nullable=False)
+    password_hash = sa.Column(sa.String, nullable=False)
+    disabled = sa.Column(sa.Boolean, nullable=False, server_default="0")
+
+
+class Tenant(Base):
+    __tablename__ = "tenants"
+
+    id = ID()
+
+
+class TenantUser(Base):
+    __tablename__ = "tenant_users"
+
+    id = ID()
+    tenant_id = sa.Column(pg.UUID(), sa.ForeignKey("tenants.id", deferrable=True))
+    user_id = sa.Column(pg.UUID(), sa.ForeignKey("users.id", deferrable=True))
 
 
 class Category(Base):

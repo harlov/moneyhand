@@ -5,8 +5,8 @@ from aiogram import types
 
 
 from moneyhand.app import create_service
-from moneyhand.core.entities import CategoryType
 from moneyhand.core.errors import EntityValidationError
+from moneyhand.core import entities
 from moneyhand.core.service import Service
 
 from moneyhand.interfaces.telegram.app import dp
@@ -94,14 +94,14 @@ async def add_category_name(message: types.Message, state: FSMContext):
     await state.update_data(name=message.text)
     await message.answer(
         "Select type for a new category:",
-        reply_markup=helpers.keyboard([[i.name for i in CategoryType]]),
+        reply_markup=helpers.keyboard([[i.name for i in entities.CategoryType]]),
     )
 
 
 @dp.message_handler(state=states.AddCategory.type)
 async def add_category_finish(message: types.Message, state: FSMContext):
     data = await state.get_data()
-    type_ = await inputs.read_type(CategoryType, message)
+    type_ = await inputs.read_type(entities.CategoryType, message)
     if type_ is None:
         return
 

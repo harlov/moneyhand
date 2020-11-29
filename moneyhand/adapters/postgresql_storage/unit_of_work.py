@@ -4,6 +4,8 @@ import contextvars
 from moneyhand.adapters.postgresql_storage.unit_of_work_context import UnitOfWorkContext
 from moneyhand.core.unit_of_work import AbstractUnitOfWork
 from moneyhand.adapters.postgresql_storage.repository import (
+    TenantRepository,
+    UserRepository,
     CategoryRepository,
     IncomeRepository,
     SpendingPlanRepository,
@@ -24,6 +26,8 @@ class UnitOfWork(AbstractUnitOfWork):
             echo=config.DEBUG_SQL,
         )
         self._context = contextvars.ContextVar("_context")
+        self.tenant = TenantRepository(self._context)
+        self.user = UserRepository(self._context)
         self.category = CategoryRepository(self._context)
         self.income = IncomeRepository(self._context)
         self.spending_plan = SpendingPlanRepository(self._context)

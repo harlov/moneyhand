@@ -7,6 +7,8 @@ from moneyhand.core import entities
 from moneyhand.core.repository import AbstractCategoryRepository
 from moneyhand.core.repository import AbstractIncomeRepository
 from moneyhand.core.repository import AbstractSpendingPlanRepository
+from moneyhand.core.repository import AbstractTenantRepository
+from moneyhand.core.repository import AbstractUserRepository
 
 
 class BaseInMemoryRepo:
@@ -79,10 +81,56 @@ def repository_spending_plan_in_memory() -> Type[AbstractSpendingPlanRepository]
         async def save(self, spending_plan: entities.SpendingPlan) -> None:
             self.collection[spending_plan.id] = spending_plan
 
-        async def get(self) -> Optional[entities.SpendingPlan]:
+        async def get(
+            self,
+        ) -> Optional[entities.SpendingPlan]:
             try:
                 return list(self.collection.values())[0]
             except IndexError:
                 return None
 
     return InMemorySpendingPlanRepository
+
+
+@pytest.fixture
+def repository_tenant_in_memory() -> Type[AbstractTenantRepository]:
+    class InMemoryTenantRepository(BaseInMemoryRepo, AbstractTenantRepository):
+        @property
+        def collection(self):
+            return self._store.tenants
+
+        async def save(self, tenant: entities.Tenant) -> None:
+            self.collection[tenant.id] = tenant
+
+        async def get(self, pk: UUID) -> Optional[entities.Tenant]:
+            try:
+                return self.collection[pk]
+            except IndexError:
+                return None
+
+    return InMemoryTenantRepository
+
+
+@pytest.fixture
+def repository_user_in_memory() -> Type[AbstractUserRepository]:
+    class InMemoryUserRepository(BaseInMemoryRepo, AbstractUserRepository):
+        @property
+        def collection(self):
+            return self._store.users
+
+        async def save(self, user: entities.User) -> None:
+            self.collection[user.id] = user
+
+        async def get(self, pk: UUID) -> Optional[entities.User]:
+            try:
+                return self.collection[pk]
+            except IndexError:
+                return None
+
+        async def find(self, name: str) -> Optional[entities.User]:
+            for item in self.collection.values():
+                if item.name == name:
+                    return item
+            return None
+
+    return InMemoryUserRepository
