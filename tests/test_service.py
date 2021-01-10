@@ -93,7 +93,7 @@ async def test_update_category(service_in_memory: Service, memory_category_food)
 
 
 async def test_set_income_at_first_time(service_in_memory: Service):
-    res: entities.Income = await service_in_memory.set_income(1, 100000)
+    res: entities.Income = await service_in_memory.set_income(part_1=100000)
     assert res.part_1 == 100000
     assert res.part_2 == 0
 
@@ -103,7 +103,7 @@ async def test_set_income_at_first_time(service_in_memory: Service):
 
 @pytest.mark.usefixtures("memory_income")
 async def test_set_income_if_already_exists(service_in_memory: Service):
-    res: entities.Income = await service_in_memory.set_income(1, 100000)
+    res: entities.Income = await service_in_memory.set_income(part_1=100000)
     assert res.part_1 == 100000
     assert res.part_2 == 200
 

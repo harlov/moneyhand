@@ -27,6 +27,10 @@ class AbstractUnitOfWork(abc.ABC):
     async def rollback(self):
         ...
 
+    @abc.abstractmethod
+    async def setup(self):
+        ...
+
     async def __aenter__(self) -> None:
         pass
 

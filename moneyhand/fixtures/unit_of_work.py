@@ -54,6 +54,9 @@ def unit_of_work_memory_cls(
         temp_store: Store
 
     class InMemoryUnitOfWork(AbstractUnitOfWork):
+        async def setup(self):
+            pass
+
         def __init__(self):
             self._store = store
             self._context = contextvars.ContextVar("_context")

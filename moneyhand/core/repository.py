@@ -63,5 +63,5 @@ class AbstractSpendingPlanRepository(abc.ABC):
         ...
 
     @abc.abstractmethod
-    async def get(self) -> Optional[entities.SpendingPlan]:
+    async def get(self, pk: UUID) -> Optional[entities.SpendingPlan]:
         ...

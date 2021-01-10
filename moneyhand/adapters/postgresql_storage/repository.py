@@ -258,32 +258,34 @@ class SpendingPlanRepository(BaseAlchemyRepository, AbstractSpendingPlanReposito
                 )
             )
 
-    async def get(self) -> Optional[entities.SpendingPlan]:
+    async def get(self, pk: UUID) -> Optional[entities.SpendingPlan]:
         table = orm.SpendingPlan.__table__
         item_table = orm.SpendingPlanItem.__table__
 
-        res = (
-            await self._transaction.execute(
-                sql.select(
-                    table.c.id,
-                    table.c.is_template,
-                    helpers.jsonb_agg(
-                        helpers.json_build_object(
-                            helpers.s("category_id"),
-                            item_table.c.category_id,
-                            helpers.s("seq"),
-                            item_table.c.seq_num,
-                            helpers.s("amount"),
-                            item_table.c.amount,
-                        )
-                    ).label("items"),
-                )
-                .outerjoin(item_table)
-                .group_by(
-                    table.c.id,
-                )
+        query = (
+            sql.select(
+                table.c.id,
+                table.c.is_template,
+                helpers.jsonb_agg(
+                    helpers.json_build_object(
+                        helpers.s("category_id"),
+                        item_table.c.category_id,
+                        helpers.s("seq"),
+                        item_table.c.seq_num,
+                        helpers.s("amount"),
+                        item_table.c.amount,
+                    )
+                ).label("items"),
+            ).filter(
+                table.c.id == pk
             )
-        ).first()
+            .outerjoin(item_table)
+            .group_by(
+                table.c.id,
+            )
+        )
+
+        res = (await self._transaction.execute(query)).first()
 
         if res is None:
             return None

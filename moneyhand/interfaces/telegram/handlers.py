@@ -140,7 +140,10 @@ async def set_income_part_num(message: types.Message, state: FSMContext):
 async def set_income_finish(message: types.Message, state: FSMContext):
     state_date = await state.get_data()
     try:
-        income = await service.set_income(state_date["part_num"], float(message.text))
+        kwargs = {
+            f"part_{state_date['part_num']}": float(message.text),
+        }
+        income = await service.set_income(**kwargs)
     except EntityValidationError as e:
         await message.answer(renders.es(f"{e.field}: {e.error}"))
         return
